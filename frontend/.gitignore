@@ -27,6 +27,7 @@ coverage
 *.tsbuildinfo
 
 .eslintcache
+serviceAccountKey.json
 
 # Cypress
 /cypress/videos/

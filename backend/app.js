@@ -4,6 +4,7 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 const app = express();
+const db = require('./config/firebase');
 
 // Middleware
 app.use(cors());
