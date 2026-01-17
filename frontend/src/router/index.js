@@ -5,8 +5,9 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', name: 'home', component: HomeView },
-    // { path: '/add', name: 'add-recipe', component: () => import('../views/AddRecipeView.vue') },
-    // { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') }
+    { path: '/register', name: 'register', component: () => import('../views/Register.vue') },
+    { path: '/login', name: 'login', component: () => import('../views/SignIn.vue') },
+    { path: '/add-listing', name: 'add-listing', component: () => import('../views/AddListing.vue') }
   ]
 })
 

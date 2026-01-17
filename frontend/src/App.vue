@@ -2,11 +2,7 @@
   <div class="common-layout">
     <el-container>
       <el-header>
-        <el-menu mode="horizontal" :router="true" default-active="/">
-          <el-menu-item index="/">🏠 Rețete</el-menu-item>
-          <el-menu-item index="/add">➕ Adaugă Rețetă</el-menu-item>
-          <el-menu-item index="/login">🔑 Login</el-menu-item>
-        </el-menu>
+        <TopBar width="100%" />
       </el-header>
       
       <el-main>
@@ -17,8 +13,12 @@
 </template>
 
 <script>
+import TopBar from './components/TopBar.vue';
 export default {
   name: 'App',
+  components: {
+    TopBar
+  },
   data() {
     return {
       

@@ -1,8 +1,8 @@
 <template>
   <div class="home">
-    <h1>🍲 Catalog de Rețete</h1>
-    <p>Bine ai venit! Aici va fi lista ta de rețete delicioase.</p>
-    <el-button type="success">Explorează Rețetele</el-button>
+    <h1> Anunturi imobiliare</h1>
+    <p>Bine ai venit! Aici va fi lista ta de anunturi imobiliare.</p>
+    <el-button type="success">Explorează Anunturile</el-button>
   </div>
 </template>
 
