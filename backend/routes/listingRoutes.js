@@ -1,8 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/authMiddleware');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const db = require('../config/firebase');
 const { ro } = require('@faker-js/faker');
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uid = req.user.uid;
+        if (!req.listingId) {
+            req.listingId = Date.now() + Math.random().toString(36).substring(2, 12);
+        }
+        const uploadPath = path.join(__dirname, '../uploads/', uid, req.listingId);
+
+        if (!fs.existsSync(uploadPath)){
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
 
 router.get('/',async (req, res) => {
     try {
@@ -14,11 +36,22 @@ router.get('/',async (req, res) => {
     }
 });
 
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, upload.array('images', 8), async (req, res) => {
     try {
-        const newListing = { ...req.body, ownerId: req.user.uid, createdAt: new Date().toISOString()     };
-        const docRef = await db.collection('listings').add(newListing);
-        res.status(201).json({ id: docRef.id, ...newListing });
+        const uid = req.user.uid;
+        const listingId = req.listingId;
+
+        const imagePaths = req.files.map(file => {
+            return `/uploads/${uid}/${listingId}/${file.filename}`;
+        });
+        const newListing = {
+            ...req.body,
+            images: imagePaths,
+            ownerId: uid,
+            createdAt: new Date().toISOString()
+        };
+        await db.collection('listings').doc(listingId).set(newListing);
+        res.status(201).json({ id: listingId, ...newListing });
     } catch (error) {
         res.status(500).json({ message: 'Eroare la crearea anuntului', error });
     }
