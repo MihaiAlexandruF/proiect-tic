@@ -23,7 +23,7 @@
       </el-button>
     </el-form-item>
     
-    <p>Nu ai cont? <router-link to="/register">Înregistrează-te aici</router-link></p>
+    <p>Nu ai cont? <router-link :to="{ path: '/register', query: $route.query }">Înregistrează-te aici</router-link></p>
   </el-form>
 </template>
 
@@ -65,7 +65,8 @@ export default {
             ElMessage.success('Autentificare reușită!');
             console.log('User signed in:', userCredential.user);
             
-            this.$router.push('/');
+            const destinantion = this.$route.query.redirect || '/';
+            this.$router.push(destinantion);
           } catch (error) {
             console.error('Eroare Firebase:', error.code);
             ElMessage.error('Eroare: ' + error.message);

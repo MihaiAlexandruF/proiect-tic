@@ -5,13 +5,14 @@ const verifyToken = require('../middleware/authMiddleware');
 
 router.post('/', verifyToken, async (req, res) => {
     try {
-        const { uid, email, firstname, lastname } = req.body;
+        const { uid, email, firstname, lastname , phone } = req.body;
 
         const userProfile ={
             firstname,
             lastname,
             email: email,
             role: 'user',
+            phone: phone,
             createdAt: new Date().toISOString()
         };
 

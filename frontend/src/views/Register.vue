@@ -20,7 +20,9 @@
     </el-form-item>
     </el-col>
     </el-row>
-
+    <el-form-item label="Numar de Telefon" prop="phone"  >
+      <el-input placeholder="Ex: 0712345678" v-model="form.phone" ></el-input>
+    </el-form-item>
     <el-form-item label="Email" prop="email">
       <el-input v-model="form.email" placeholder="Ex: agent@imobiliare.ro"></el-input>
     </el-form-item>
@@ -52,7 +54,8 @@ export default {
         email: '',
         password: '',
         lastname: '',
-        firstname: ''
+        firstname: '',
+        phone:'',
       },
       rules: {
         email: [
@@ -68,7 +71,11 @@ export default {
         ],
         firstname: [
           { required: true, message: 'Prenumele este obligatoriu', trigger: 'blur' }
-        ]
+        ],
+        phone:[
+          {required: true, message:'Numarul de telefon este obligatoriu', trigger: 'blur'},
+          {min:10, max:10, message:"Trebuie sa contina 10 cifre", trigger:'blur'},
+      ],
       }
     };
   },
@@ -87,13 +94,17 @@ export default {
               uid: userCredential.user.uid,
               email: this.form.email,
               lastname: this.form.lastname,
-              firstname: this.form.firstname
+              firstname: this.form.firstname,
+              phone: this.form.phone
             });
 
             ElMessage.success('Cont creat cu succes!');
             console.log('User registered:', userCredential.user);
             
-            this.$router.push('/');
+            const destinantion = this.$route.query.redirect || '/';
+            this.$router.push(destinantion);
+
+            //this.$router.push('/');
           } catch (error) {
             console.error('Eroare Firebase:', error.code);
             ElMessage.error('Eroare: ' + error.message);

@@ -50,6 +50,7 @@ router.post('/', verifyToken, upload.array('images', 8), async (req, res) => {
             ownerId: uid,
             createdAt: new Date().toISOString()
         };
+        console.log('Creare anunt cu datele:', newListing);
         await db.collection('listings').doc(listingId).set(newListing);
         res.status(201).json({ id: listingId, ...newListing });
     } catch (error) {
@@ -70,6 +71,42 @@ router.put('/:id', verifyToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Eroare la actualizarea anuntului', error });
     }
+});
+
+router.get('/:id', async (req, res) => {
+    try {
+        const doc = await db.collection('listings').doc(req.params.id).get();
+        if (!doc.exists) {
+            return res.status(404).json({ message: 'Anuntul nu a fost gasit' });
+        }
+        res.status(200).json({ id: doc.id, ...doc.data() });
+    } catch (error) {
+        res.status(500).json({ message: 'Eroare la preluarea anuntului', error });
+    }
+});
+router.get('/owner/:listingId', verifyToken, async (req, res) => {
+  try {
+    const listingId = req.params.listingId;
+    const listingDoc = await db.collection('listings').doc(listingId).get();
+    if (!listingDoc.exists) return res.status(404).json({ message: 'Anunțul nu a fost găsit' });
+
+    const listingData = listingDoc.data();
+    const ownerUid = listingData.ownerId || listingData.userId || listingData.uid;
+    if (!ownerUid) return res.status(404).json({ message: 'Proprietarul nu este setat pe anunț' });
+
+    const userDoc = await db.collection('users').doc(ownerUid).get();
+    if (!userDoc.exists) return res.status(404).json({ message: 'Proprietarul nu a fost găsit' });
+
+    const u = userDoc.data();
+    res.status(200).json({
+      id: userDoc.id,
+      firstname: u.firstname || null,
+      lastname: u.lastname || null,
+      phone: u.phone || null
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Eroare la preluarea proprietarului', error: error.message });
+  }
 });
 
 module.exports = router;

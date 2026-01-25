@@ -6,11 +6,13 @@ const listingRoutes = require('./routes/listingRoutes');
 const userRoutes = require('./routes/userRoutes');
 const app = express();
 const db = require('./config/firebase');
+const path = require('path');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/listings', listingRoutes);
 app.use('/api/users', userRoutes);
 app.get('/', (req, res) => {

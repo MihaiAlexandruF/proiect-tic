@@ -79,6 +79,16 @@
         <el-form :model="form" label-position="top">
           <el-row :gutter="12">
             <el-col :xs="24" :sm="12">
+              <el-form-item label="Tip compartimentare" prop="partitioning">
+                <el-select v-model="form.partitioning" placeholder="Selecteaza">
+                  <el-option label="Decomandat" value="decomandat" />
+                  <el-option label="Semidecomandat" value="semidecomandat" />
+                  <el-option label="Nedecomandat" value="nedecomandat" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+
+            <el-col :xs="24" :sm="12">
               <el-form-item label="Etaj">
                 <el-input v-model="form.floor" placeholder="ex: 3/8" />
               </el-form-item>
@@ -118,7 +128,7 @@
               <el-form-item label="Încalzire">
                 <el-select v-model="form.heating" placeholder="Selecteaza">
                   <el-option label="Centrala proprie" value="private_boiler" />
-                  <el-option label="Încalzire centrala" value="central_heating" />
+                  <el-option label="Încalzire centralizata" value="central_heating" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -128,6 +138,19 @@
                 <el-input-number v-model="form.balconies" :min="0" />
               </el-form-item>
             </el-col>
+
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="Anul constructiei">
+               <el-select v-model="form.buildingYear" placeholder="Selecteaza">
+                  <el-option label="1941-1977" value="1941-1977" />
+                  <el-option label="1978-1990" value="1978-1990" />
+                  <el-option label="1991-2000" value="1991-2000" />
+                  <el-option label="2001-2010" value="2001-2010" />
+                  <el-option label="2011-prezent" value="2011-prezent" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+
 
             <el-col :span="24">
               <el-form-item label="Facilitati">
@@ -184,6 +207,7 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import api from '../api'
+import { pa } from 'element-plus/es/locales.mjs';
 export default {
   name: 'AddListingGamified',
   setup() {
@@ -241,6 +265,8 @@ export default {
       location: '',
       images: [],
       floor: '',
+      partitioning: '',
+      buildingYear: '',
       rooms: 1,
       surface: null,
       furnished: '',
@@ -254,6 +280,7 @@ export default {
       title: [{ required: true, message: 'Titlu necesar', trigger: 'blur' }],
       description: [{ required: true, message: 'Descriere necesara', trigger: 'blur' }],
       price: [{ required: true, message: 'Pret necesar', trigger: 'change' }],
+      partitioning: [{ required: true, message: 'Tip compartimentare necesar', trigger: 'change' }],
     }
 
     // dummy upload to create local preview without server
