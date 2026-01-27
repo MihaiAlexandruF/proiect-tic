@@ -10,7 +10,9 @@ const path = require('path');
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://proiect-tic-mocha.vercel.app'
+    'https://proiect-tic-mocha.vercel.app',
+    'https://proiect-8whibvjqk-mihaialexandrufs-projects.vercel.app',
+    'https://proiect-bfi2mtga1-mihaialexandrufs-projects.vercel.app'
 ];
 
 app.use(cors({
