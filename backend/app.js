@@ -14,11 +14,15 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
+        console.log('Origin primit:', origin);
+        
         if (!origin || 
             allowedOrigins.indexOf(origin) !== -1 || 
-            origin.endsWith('.vercel.app')) {
+            (origin && origin.endsWith('.vercel.app'))) {
+            console.log('CORS: Access permis pentru', origin);
             callback(null, true);
         } else {
+            console.log('CORS: Access respins pentru', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
