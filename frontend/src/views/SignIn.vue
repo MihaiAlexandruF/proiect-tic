@@ -77,6 +77,18 @@ export default {
         }
       });
     }
+  },
+  mounted() {
+    // Verificăm dacă în URL avem "?redirect="
+    if (this.$route.query.redirect) {
+      ElMessage({
+        message: 'Trebuie să fii autentificat pentru a accesa această pagină!',
+        type: 'warning',
+        duration: 5000, // Mesajul stă 5 secunde
+        showClose: true,
+      });
+    }
   }
+
 };
 </script>

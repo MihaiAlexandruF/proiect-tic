@@ -1,7 +1,6 @@
 <template>
   <div class="page-background">
     <div class="details-wrapper" v-if="listing">
-      
       <el-card shadow="never" class="header-card">
         <el-page-header @back="$router.push('/')">
           <template #content>
@@ -12,14 +11,13 @@
 
       <el-row :gutter="20" style="margin-top: 20px">
         <el-col :xs="24" :md="16">
-          
           <el-card :body-style="{ padding: '0px' }" class="main-card">
             <el-carousel height="500px" indicator-position="outside">
               <el-carousel-item v-for="(item, index) in listing.images" :key="index">
                 <el-image :src="item" fit="cover" class="carousel-img">
-                   <template #placeholder>
-                      <div class="image-slot">Încărcare...</div>
-                   </template>
+                  <template #placeholder>
+                    <div class="image-slot">Încărcare...</div>
+                  </template>
                 </el-image>
               </el-carousel-item>
             </el-carousel>
@@ -33,15 +31,104 @@
               </div>
             </template>
             <el-descriptions :column="2" border>
-              <el-descriptions-item label="Compartimentare">{{ listing.partitioning }}</el-descriptions-item>
-              <el-descriptions-item label="Camere">{{ listing.rooms }}</el-descriptions-item>
-              <el-descriptions-item label="Suprafață">{{ listing.surface }} mp</el-descriptions-item>
-              <el-descriptions-item label="Tip">{{ listing.type }}</el-descriptions-item>
-              <el-descriptions-item label="Etaj">{{ listing.floor || 'Parter' }}</el-descriptions-item>
-              <el-descriptions-item label="Locație">{{ listing.county }}</el-descriptions-item>
-              <el-descriptions-item label="Încălzire" >{{ heatingLabel }}</el-descriptions-item>
-              
+              <el-descriptions-item label="Compartimentare">{{
+                listing.specs.partitioning
+              }}</el-descriptions-item>
+              <el-descriptions-item label="Camere">{{ listing.specs.rooms }}</el-descriptions-item>
+              <el-descriptions-item label="Suprafață"
+                >{{ listing.specs.surface }} mp</el-descriptions-item
+              >
+        
+              <el-descriptions-item label="Etaj">{{
+                listing.specs.floor || 'Parter'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="Încălzire">{{ heatingLabel }}</el-descriptions-item>
+              <el-descriptions-item label="An constructie">{{
+                listing.specs.buildingYear
+              }}</el-descriptions-item>
             </el-descriptions>
+          </el-card>
+          <el-card class="main-card" style="margin-top: 20px">
+            <template #header>
+              <div class="section-header">
+                <el-icon><CircleCheck /></el-icon>
+                <span>Reguli și Costuri Suplimentare</span>
+              </div>
+            </template>
+
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-descriptions :column="1" title="Cheltuieli" border>
+                  <el-descriptions-item label="Întreținere medie">
+                    {{ listing.costs?.maintenanceCost || 0 }} EUR / lună
+                  </el-descriptions-item>
+                  <el-descriptions-item label="Utilități incluse">
+                    <el-tag :type="listing.costs?.utilitiesIncluded ? 'success' : 'info'">
+                      {{ listing.costs?.utilitiesIncluded ? 'Da' : 'Nu' }}
+                    </el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="Ședere minimă">
+                    {{ listing.costs?.minimumStayMonths || 1 }} luni
+                  </el-descriptions-item>
+                </el-descriptions>
+              </el-col>
+
+         <el-col :span="12">
+  <el-descriptions title="Reguli și Permisiuni" :column="1" border>
+    
+    <el-descriptions-item label="Pet Friendly">
+      <el-tag :type="listing.rules?.petsAllowed ? 'success' : 'danger'" disable-transitions>
+        {{ listing.rules?.petsAllowed ? 'Permis' : 'Interzis' }}
+      </el-tag>
+    </el-descriptions-item>
+
+    <el-descriptions-item label="Fumatul permis">
+      <el-tag :type="listing.rules?.smokingAllowed ? 'success' : 'danger'" disable-transitions>
+        {{ listing.rules?.smokingAllowed ? 'Da' : 'Nu' }}
+      </el-tag>
+    </el-descriptions-item>
+
+    <el-descriptions-item label="Acceptă studenți">
+      <el-tag :type="listing.rules?.studentsAllowed ? 'success' : 'info'" disable-transitions>
+        {{ listing.rules?.studentsAllowed ? 'Da' : 'Nespecificat' }}
+      </el-tag>
+    </el-descriptions-item>
+
+    <el-descriptions-item label="Acceptă străini">
+      <el-tag :type="listing.rules?.foreignersAllowed ? 'success' : 'info'" disable-transitions>
+        {{ listing.rules?.foreignersAllowed ? 'Da' : 'Nespecificat' }}
+      </el-tag>
+    </el-descriptions-item>
+
+    <el-descriptions-item label="Ședere minimă">
+      <b>{{ listing.costs?.minimumStayMonths || 1 }} luni</b>
+    </el-descriptions-item>
+
+  </el-descriptions>
+</el-col>
+            </el-row>
+          </el-card>
+
+          <el-card class="main-card" style="margin-top: 20px">
+            <template #header>
+              <div class="section-header">
+                <el-icon><StarFilled /></el-icon>
+                <span>Dotări și Facilități</span>
+              </div>
+            </template>
+            <div class="tags-wrapper">
+              <el-tag
+                v-for="feature in listing.specs?.features"
+                :key="feature"
+                effect="plain"
+                class="feature-tag"
+              >
+                {{ feature }}
+              </el-tag>
+              <span v-if="!listing.specs?.features?.length" style="color: #909399"
+                >Fără dotări extra specificate.</span
+              >
+            </div>
           </el-card>
 
           <el-card class="main-card" style="margin-top: 20px">
@@ -59,31 +146,34 @@
             <div class="price-tag">{{ listing.price }} EUR</div>
             <el-divider />
             <div class="action-buttons">
-              <el-button type="primary" size="large" icon="Phone" @click="getSellerPhone" >Suna Vânzătorul</el-button>
+              <el-button type="primary" size="large" icon="Phone" @click="getSellerPhone"
+                >Suna Vânzătorul</el-button
+              >
             </div>
-            <div v-if="canSeeSellerPhone" style="margin-top: 15px; text-align: center;">
+            <div v-if="canSeeSellerPhone" style="margin-top: 15px; text-align: center">
               <el-icon><Phone /></el-icon>
               <span>{{ sellerPhone }}</span>
             </div>
             <el-divider />
             <div class="info-footer">
-               <el-icon><Calendar /></el-icon> 
-               <span>Publicat la: {{ formatDate(listing.createdAt) }}</span>
+              <el-icon><Calendar /></el-icon>
+              <span>Publicat la: {{ formatDate(listing.createdAt) }}</span>
             </div>
           </el-card>
-          <el-tag  style="font-size: large; margin-top: 20px;"  type="primary" size="large">Adresa: {{ listing.locality }}, {{ listing.street }}</el-tag>
+          <el-tag style="font-size: large; margin-top: 20px" type="primary" size="large"
+            >Adresa: {{ listing.locality }}, {{ listing.street }}</el-tag
+          >
         </el-col>
-        
       </el-row>
     </div>
   </div>
 </template>
 <script>
-import axios from 'axios';
-import { Location, Phone, Calendar, InfoFilled } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import axios from 'axios'
+import { Location, Phone, Calendar, InfoFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
-import apiClient from '@/api';
+import apiClient from '@/api'
 
 export default {
   name: 'ListingDetail',
@@ -95,62 +185,58 @@ export default {
       authStore: useAuthStore(),
       canSeeSellerPhone: false,
       sellerPhone: '',
-    };
+    }
   },
   async mounted() {
-    // Luăm ID-ul din runda actuală (ex: /listing/123)
-    const listingId = this.$route.params.id;
-    await this.fetchListingDetails(listingId);
+    const listingId = this.$route.params.id
+    await this.fetchListingDetails(listingId)
   },
   methods: {
     async fetchListingDetails(id) {
       try {
-        const response = await axios.get(`http://localhost:3000/api/listings/${id}`);
-        this.listing = response.data;
+        const response = await axios.get(`http://localhost:3000/api/listings/${id}`)
+        this.listing = response.data
       } catch (error) {
-        console.error("Nu am putut încărca datele:", error);
+        console.error('Nu am putut încărca datele:', error)
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
-     async getSellerPhone() {
-      if(!this.authStore.isLoggedIn){
+    async getSellerPhone() {
+      if (!this.authStore.isLoggedIn) {
         ElMessage({
-          message: 'Trebuie să fii autentificat pentru a vedea numărul de telefon al proprietarului.',
+          message:
+            'Trebuie să fii autentificat pentru a vedea numărul de telefon al proprietarului.',
           type: 'error',
-        });
-        this.$router.push({ 
-        path: '/login', 
-        query: { redirect: this.$route.fullPath }
-        });
-        return false;
+        })
+        this.$router.push({
+          path: '/login',
+          query: { redirect: this.$route.fullPath },
+        })
+        return false
       } else {
-        this.canSeeSellerPhone = true;
-
+        this.canSeeSellerPhone = true
 
         const response = await apiClient(`/listings/owner/${this.listing.id}`)
-        this.sellerPhone = response.data.phone || '';
-        return true;
+        this.sellerPhone = response.data.phone || ''
+        return true
       }
-
-      
     },
     formatDate(dateString) {
-      if (!dateString) return '';
-      return new Date(dateString).toLocaleDateString('ro-RO');
-    }
+      if (!dateString) return ''
+      return new Date(dateString).toLocaleDateString('ro-RO')
+    },
   },
   computed: {
     heatingLabel() {
-      if (!this.listing || !this.listing.heating) return '';
+      if (!this.listing || !this.listing.specs.heating) return ''
       const heatingMap = {
         private_boiler: 'Centrala proprie',
-        central_heating: 'Încălzire centralizată'
-      };
-      return heatingMap[this.listing.heating] || this.listing.heating;
-    }
-    
-  }
+        central_heating: 'Încălzire centralizată',
+      }
+      return heatingMap[this.listing.specs.heating] || this.listing.specs.heating
+    },
+  },
 }
 </script>
 
@@ -172,7 +258,7 @@ export default {
 .main-card {
   border-radius: 12px;
   border: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
 }
 
 .header-card {

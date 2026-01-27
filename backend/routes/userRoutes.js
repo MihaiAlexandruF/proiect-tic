@@ -4,24 +4,36 @@ const db = require('../config/firebase');
 const verifyToken = require('../middleware/authMiddleware');
 
 router.post('/', verifyToken, async (req, res) => {
-    try {
-        const { uid, email, firstname, lastname , phone } = req.body;
+  try {
+    // Luam uid din token (req.user) sau din body ca backup
+    const uid = req.user?.uid || req.body.uid;
 
-        const userProfile ={
-            firstname,
-            lastname,
-            email: email,
-            role: 'user',
-            phone: phone,
-            createdAt: new Date().toISOString()
-        };
-
-        const userRef = db.collection('users').doc(uid);
-        await userRef.set(userProfile);
-        res.status(201).json({ message: 'Utilizator creat cu succes', profile: userProfile });
-    } catch (error) {
-        res.status(500).json({ message: 'Eroare la crearea utilizatorului', error });
+    if (!uid) {
+      console.log("EROARE: UID-ul lipseste!");
+      return res.status(400).json({ message: 'UID lipsa' });
     }
+
+    const { email, firstname, lastname, phone } = req.body;
+
+    const userProfile = {
+      firstname: firstname || '',
+      lastname: lastname || '',
+      email: email || '',
+      phone: phone || '',
+      role: 'user',
+      createdAt: new Date().toISOString()
+    };
+
+    console.log("Incercam salvarea in Firestore pentru UID:", uid);
+    
+    await db.collection('users').doc(uid).set(userProfile);
+    
+    res.status(201).json({ message: 'Succes', profile: userProfile });
+  } catch (error) {
+    // Aici vezi in terminalul de VS Code eroarea reala!
+    console.error("Eroare detaliata server:", error); 
+    res.status(500).json({ message: 'Eroare interna', error: error.message });
+  }
 });
 
 module.exports = router;

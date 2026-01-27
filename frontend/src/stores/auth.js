@@ -10,7 +10,6 @@ export const useAuthStore = defineStore('auth', {
     loading: true
   }),
   actions: {
-    // Detectează automat dacă utilizatorul este logat la pornirea aplicației
     init() {
       return new Promise((resolve) => {
         onAuthStateChanged(auth, (user) => {

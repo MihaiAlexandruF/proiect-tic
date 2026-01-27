@@ -19,6 +19,7 @@
       <el-sub-menu index="user">
         <template #title>👤 Contul meu</template>
         <el-menu-item @click="handleLogout">Ieșire</el-menu-item>
+        <el-menu-item @click="myListings">Anunturile mele</el-menu-item>
       </el-sub-menu>
     </template>
   </el-menu>
@@ -26,6 +27,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import router from '@/router'
 import { el } from 'element-plus/es/locales.mjs'
 
 const authStore = useAuthStore()
@@ -39,6 +41,10 @@ const handleLogout = async () => {
   } catch (error) {
     console.error('Error during logout:', error)
   }
+}
+
+const myListings = () =>{
+  router.push('/listings/my-listings');
 }
 
 </script>

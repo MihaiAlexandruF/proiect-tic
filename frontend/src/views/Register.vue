@@ -80,41 +80,50 @@ export default {
     };
   },
   methods: {
-    async handleRegister() {
-      this.$refs.registerForm.validate(async (valid) => {
-        if (valid) {
-          try {
-            const userCredential = await createUserWithEmailAndPassword(
-              auth, 
-              this.form.email, 
-              this.form.password
-            );
-            
-            await api.post('/users', {
-              uid: userCredential.user.uid,
-              email: this.form.email,
-              lastname: this.form.lastname,
-              firstname: this.form.firstname,
-              phone: this.form.phone
-            });
-
-            ElMessage.success('Cont creat cu succes!');
-            console.log('User registered:', userCredential.user);
-            
-            const destinantion = this.$route.query.redirect || '/';
-            this.$router.push(destinantion);
-
-            //this.$router.push('/');
-          } catch (error) {
-            console.error('Eroare Firebase:', error.code);
-            ElMessage.error('Eroare: ' + error.message);
-          }
-        } else {
-          ElMessage.warning('Te rugăm să completezi corect câmpurile.');
-          return false;
-        }
-      });
+    // frontend/src/views/Register.vue
+async handleRegister() {
+  this.$refs.registerForm.validate(async (valid) => {
+    if (!valid) {
+      ElMessage.warning('Te rugam sa completezi corect campurile.');
+      return;
     }
+
+    try {
+      // 1. Creezi userul in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        this.form.email, 
+        this.form.password
+      );
+      
+      const user = userCredential.user;
+
+      // 2. Trimiti datele la backend
+      // IMPORTANT: apiClient va atasa automat Token-ul deoarece userul este acum logat
+      await api.post('/users', {
+        uid: user.uid, 
+        email: this.form.email,
+        lastname: this.form.lastname,
+        firstname: this.form.firstname,
+        phone: this.form.phone
+      });
+
+      ElMessage.success('Cont creat cu succes!');
+      
+      const destination = this.$route.query.redirect || '/';
+      this.$router.push(destination);
+
+    } catch (error) {
+      console.error('Eroare inregistrare:', error);
+      
+      if (error.code === 'auth/email-already-in-use') {
+        ElMessage.error('Acest email este deja utilizat.');
+      } else {
+        ElMessage.error('Eroare la inregistrare. Te rugam sa incerci din nou.');
+      }
+    }
+  });
+}
   }
 };
 </script>
