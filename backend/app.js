@@ -8,8 +8,21 @@ const app = express();
 const db = require('./config/firebase');
 const path = require('path');
 
-// Middleware
-app.use(cors());
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://your-project.vercel.app'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
