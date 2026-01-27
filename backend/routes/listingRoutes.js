@@ -29,18 +29,104 @@ router.get('/',async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
+
+        const title = req.query.title;
+        const county = req.query.county;
+        const city = req.query.city;
+        const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
+        const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
+        const rooms = req.query.rooms;
+        const surface = req.query.surface ? Number(req.query.surface) : null;
+        const features = req.query.features;
+
+        let query = db.collection('listings');
+
+        query = query.orderBy('createdAt', 'desc');
+
+        const fetchLimit = limit * 3;
+        query = query.limit(fetchLimit);
+
+        const snapshot = await query.get();
+        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (county) {
+            const countyLower = county.toLowerCase();
+            data = data.filter(listing => {
+                const listingRegion = listing.region || '';
+                return listingRegion.toLowerCase() === countyLower;
+            });
+        }
+
+        if (city) {
+            const cityLower = city.toLowerCase();
+            data = data.filter(listing => {
+                const listingCity = listing.locality || '';
+                return listingCity.toLowerCase().includes(cityLower);
+            });
+        }
+
+        if (title) {
+            const titleLower = title.toLowerCase();
+            data = data.filter(listing => {
+                const listingTitle = listing.title || '';
+                return listingTitle.toLowerCase().includes(titleLower);
+            });
+        }
+
+        if (minPrice !== null) {
+            data = data.filter(listing => {
+                const listingPrice = Number(listing.price) || 0;
+                return listingPrice >= minPrice;
+            });
+        }
+
+        if (maxPrice !== null) {
+            data = data.filter(listing => {
+                const listingPrice = Number(listing.price) || 0;
+                return listingPrice <= maxPrice;
+            });
+        }
+
+        if (rooms) {
+            data = data.filter(listing => {
+                const listingRooms = listing.specs?.rooms;
+                if (rooms === '4+') {
+                    return listingRooms >= 4;
+                }
+                return listingRooms == Number(rooms);
+            });
+        }
+
+        if (surface !== null) {
+            data = data.filter(listing => {
+                const listingSurface = Number(listing.specs?.surface) || 0;
+                return listingSurface >= surface;
+            });
+        }
+
+        if (features) {
+            const featureArray = features.split(',');
+            data = data.filter(listing => {
+                const listingSpecs = listing.specs || {};
+                return featureArray.every(feature => {
+                    if (feature === 'mobilat') {
+                        return listingSpecs.furnished === 'furnished';
+                    }
+                    if (feature === 'centrala') {
+                        return listingSpecs.heating === 'central_heating' || listingSpecs.heating === 'private_boiler';
+                    }
+                    return false;
+                });
+            });
+        }
+
         const offset = (page - 1) * limit;
+        const paginatedData = data.slice(offset, offset + limit);
 
-        const snapshot = await db.collection('listings')
-            .orderBy('createdAt', 'desc')
-            .limit(limit)
-            .offset(offset)
-            .get();
-
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        res.status(200).json(data);
+        res.status(200).json(paginatedData);
     } catch (error) {
-        res.status(500).json({ message: 'Eroare la preluarea anunturilor', error });
+        console.error('Eroare la preluarea anunturilor:', error);
+        res.status(500).json({ message: 'Eroare la preluarea anunturilor', error: error.message });
     }
 });
 
@@ -165,18 +251,86 @@ router.post('/', verifyToken, upload.array('images', 8), async (req, res) => {
     }
 });
 
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, upload.array('images', 8), async (req, res) => {
     try {
+        const uid = req.user.uid;
         const docRef = db.collection('listings').doc(req.params.id);
         const doc = await docRef.get();
 
         if (!doc.exists) {
             return res.status(404).json({ message: 'Anuntul nu a fost gasit' });
         }
-        await docRef.update(req.body);
-        res.status(200).json({ id: doc.id, ...req.body });
+
+        const listingData = doc.data();
+        if (uid !== listingData.ownerId) {
+            return res.status(403).json({ message: 'Nu ai dreptul de modificare' });
+        }
+
+        // Parse JSON
+        const parsedSpecs = req.body.specs ? JSON.parse(req.body.specs) : listingData.specs;
+        const parsedCosts = req.body.costs ? JSON.parse(req.body.costs) : listingData.costs;
+        const parsedRules = req.body.rules ? JSON.parse(req.body.rules) : listingData.rules;
+        const parsedMeta = req.body.meta ? JSON.parse(req.body.meta) : listingData.meta;
+        const parsedExistingImages = req.body.existingImages ? JSON.parse(req.body.existingImages) : [];
+
+        // Imagini noi
+        const newImagePaths = req.files ? req.files.map(file => {
+            return `/uploads/${uid}/${req.params.id}/${file.filename}`;
+        }) : [];
+
+        const allImages = [...parsedExistingImages, ...newImagePaths];
+
+        const updatedData = {
+            title: req.body.title || listingData.title,
+            description: req.body.description || listingData.description,
+            price: req.body.price ? Number(req.body.price) : listingData.price,
+            region: req.body.region || listingData.region,
+            locality: req.body.locality || listingData.locality,
+            street: req.body.street || listingData.street,
+            specs: parsedSpecs,
+            costs: parsedCosts,
+            rules: parsedRules,
+            meta: parsedMeta,
+            images: allImages,
+            updatedAt: new Date().toISOString()
+        };
+
+        await docRef.update(updatedData);
+        res.status(200).json({ id: req.params.id, ...updatedData });
     } catch (error) {
-        res.status(500).json({ message: 'Eroare la actualizarea anuntului', error });
+        console.error('Eroare:', error);
+        res.status(500).json({ message: 'Eroare la actualizare', error: error.message });
+    }
+});
+
+router.delete('/:id', verifyToken, async (req, res) => {
+    try {
+        const uid = req.user.uid;
+        const listingId = req.params.id;
+        
+        const docRef = db.collection('listings').doc(listingId);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+            return res.status(404).json({ message: 'Anuntul nu a fost gasit' });
+        }
+
+        const listingData = doc.data();
+        if (uid !== listingData.ownerId) {
+            return res.status(403).json({ message: 'Nu ai dreptul sa stergi acest anunt' });
+        }
+
+        const uploadPath = path.join(__dirname, '../uploads/', uid, listingId);
+        if (fs.existsSync(uploadPath)) {
+            fs.rmSync(uploadPath, { recursive: true, force: true });
+        }
+
+        await docRef.delete();
+        
+        res.status(200).json({ message: 'Anunt sters cu succes' });
+    } catch (error) {
+        console.error('Eroare la stergere:', error);
+        res.status(500).json({ message: 'Eroare la stergerea anuntului', error: error.message });
     }
 });
 

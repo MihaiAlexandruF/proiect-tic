@@ -10,6 +10,7 @@
       <el-col :span="6" v-for="listing in listings" :key="listing.id">
         <MyListingsCard
           :listing="listing"
+          @edit = "handleEdit"
           @toggle-status="handleToggleStatus"
           @delete="handleDelete"
         />
@@ -45,6 +46,9 @@ export default {
         this.loading = false
       }
     },
+     handleEdit(listingId) {
+      this.$router.push(`/edit-listing/${listingId}`)
+    },
     async handleToggleStatus(listingId) {
       try {
         const response = await apiClient.patch(`/listings/changeStatus/${listingId}`)
@@ -64,11 +68,18 @@ export default {
     },
     async handleDelete(listingId) {
       try {
-        await apiClient.delete(`/listings/${listingId}`)
-        this.$message.success('Anunț șters cu succes!')
-        await this.getInfo()
+        const response = await apiClient.delete(`/listings/${listingId}`)
+        this.$message.success('Anunt sters cu succes!')
+        this.listings = this.listings.filter(l => l.id !== listingId)
       } catch (error) {
-        this.$message.error('Eroare la ștergerea anunțului')
+        console.error('Eroare:', error)
+        if (error.response?.status === 403) {
+          this.$message.error('Nu ai dreptul sa stergi acest anunt')
+        } else if (error.response?.status === 404) {
+          this.$message.error('Anuntul nu a fost gasit')
+        } else {
+          this.$message.error('Eroare la stergerea anuntului')
+        }
       }
     },
   },

@@ -1,5 +1,8 @@
 <template>
   <div class="add-container">
+    <h1 style="text-align: center; margin-bottom: 20px;">
+      {{ isEditMode ? 'Modifica Anuntul' : 'Adauga Anunt Nou' }}
+    </h1>
     <el-steps :active="activeStep" finish-status="success" align-center style="margin-bottom: 30px">
       <el-step title="Anunțul tău" />
       <el-step title="Specificații" />
@@ -241,24 +244,27 @@
       <div class="form-footer">
         <el-button v-if="activeStep > 0" @click="activeStep--">Înapoi</el-button>
         <el-button v-if="activeStep < 3" type="primary" @click="validateAndNext">Următor</el-button>
-        <el-button v-else type="success" :loading="submitting" @click="submitListing">Publică Anunțul</el-button>
+        <el-button v-else type="success" :loading="submitting" @click="submitListing">{{ isEditMode ? 'Salvează Modificările' : 'Publică Anunțul' }}</el-button>
       </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useRouter } from 'vue-router'
+import { useRouter,useRoute } from 'vue-router'
 import { Plus, Location, Money, CircleCheck } from '@element-plus/icons-vue'
 import apiClient from '@/api'
 
 const router = useRouter()
 const activeStep = ref(0)
+const route = useRoute()
 const submitting = ref(false)
 const fileList = ref([]) // Stocăm fișierele cu tot cu URL de preview
 const formStep0 = ref(null)
+const isEditMode = ref(false)
+const listingId = ref(null)
 
 const initialForm = {
   title: '',
@@ -300,26 +306,74 @@ const initialForm = {
 const form = reactive({ ...JSON.parse(JSON.stringify(initialForm)) })
 
 const rules = {
-  title: [{ required: true, message: 'Titlul este obligatoriu', trigger: 'blur' }],
-  description: [{ required: true, message: 'Adaugă o descriere', trigger: 'blur' }],
-  price: [{ required: true, message: 'Prețul este obligatoriu', trigger: 'blur' }],
-  region: [{ required: true, message: 'Selectează județul', trigger: 'change' }],
+  title: [
+    { required: true, message: 'Titlul este obligatoriu', trigger: 'blur' },
+    { min: 10, message: 'Titlul trebuie sa aiba minim 10 caractere', trigger: 'blur' }
+  ],
+  description: [
+    { required: true, message: 'Descrierea este obligatorie', trigger: 'blur' },
+    { min: 20, message: 'Descrierea trebuie sa aiba minim 20 caractere', trigger: 'blur' }
+  ],
+  price: [
+    { required: true, message: 'Pretul este obligatoriu', trigger: 'blur' },
+    { type: 'number', min: 1, message: 'Pretul trebuie sa fie mai mare de 0', trigger: 'blur' }
+  ],
+  region: [{ required: true, message: 'Selecteaza judetul', trigger: 'change' }],
   locality: [{ required: true, message: 'Localitatea este obligatorie', trigger: 'blur' }],
   street: [{ required: true, message: 'Strada este obligatorie', trigger: 'blur' }]
 }
 
-// LOGICA DE PROCESARE IMAGINI (Pentru a avea preview în pasul 3)
+onMounted(async()=>{
+  if (route.params.id) {
+    isEditMode.value = true
+    listingId.value = route.params.id
+    await loadListingData()
+  }
+})
+
+const loadListingData = async () => {
+  try {
+    const response = await apiClient.get(`/listings/${listingId.value}`)
+    const listing = response.data
+
+    // Populăm formularul cu datele existente
+    form.title = listing.title
+    form.description = listing.description
+    form.price = listing.price
+    form.region = listing.region
+    form.locality = listing.locality
+    form.street = listing.street
+    
+    Object.assign(form.specs, listing.specs)
+    Object.assign(form.costs, listing.costs)
+    Object.assign(form.rules, listing.rules)
+    Object.assign(form.meta, listing.meta)
+
+    // Încărcăm imaginile existente
+    if (listing.images && listing.images.length > 0) {
+      fileList.value = listing.images.map((img, idx) => ({
+        uid: `existing-${idx}`,
+        name: `image-${idx}.jpg`,
+        url: img, // URL-ul imaginii de pe server
+        isExisting: true // Flag pentru a diferenția imaginile existente
+      }))
+    }
+
+    ElMessage.success('Date încărcate cu succes')
+  } catch (error) {
+    console.error('Eroare la încărcarea datelor:', error)
+    ElMessage.error('Eroare la încărcarea anunțului')
+    router.push('/my-listings')
+  }
+}
 const handleImageProcess = (uploadFile) => {
-  // Verificăm dacă fișierul este imagine
   if (!uploadFile.raw.type.startsWith('image/')) {
     ElMessage.error('Poți încărca doar imagini!')
     return false
   }
 
-  // Generăm URL local pentru previzualizare
   const reader = new FileReader()
   reader.onload = (e) => {
-    // Adăugăm în lista noastră internă
     fileList.value.push({
       uid: uploadFile.uid,
       name: uploadFile.name,
@@ -339,11 +393,21 @@ const validateAndNext = async () => {
     if (!formStep0.value) return
     await formStep0.value.validate((valid) => {
       if (valid) {
+        if (fileList.value.length === 0 && !isEditMode.value) {
+          ElMessage.error('Adauga cel putin o imagine')
+          return
+        }
         activeStep.value++
       } else {
-        ElMessage.error('Completează câmpurile obligatorii de la Pasul 1.')
+        ElMessage.error('Completeaza campurile obligatorii')
       }
     })
+  } else if (activeStep.value === 1) {
+    if (!form.specs.rooms || !form.specs.surface) {
+      ElMessage.error('Numarul de camere si suprafata sunt obligatorii')
+      return
+    }
+    activeStep.value++
   } else {
     activeStep.value++
   }
@@ -354,7 +418,6 @@ const submitListing = async () => {
   try {
     const formData = new FormData()
 
-    // Câmpuri plate
     formData.append('title', form.title)
     formData.append('description', form.description)
     formData.append('price', form.price)
@@ -362,23 +425,36 @@ const submitListing = async () => {
     formData.append('locality', form.locality)
     formData.append('street', form.street)
 
-    // Obiecte NESTUITE
     formData.append('specs', JSON.stringify(form.specs))
     formData.append('costs', JSON.stringify(form.costs))
     formData.append('rules', JSON.stringify(form.rules))
     formData.append('meta', JSON.stringify(form.meta))
 
-    // Imagini - Trimitem fișierele RAW
-    fileList.value.forEach(file => {
-      if (file.raw) formData.append('images', file.raw)
+    // Trimitem doar imaginile noi
+    const newImages = fileList.value.filter(file => file.raw)
+    newImages.forEach(file => {
+      formData.append('images', file.raw)
     })
 
-    await apiClient.post('/listings', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    // Trimitem URL-urile imaginilor existente
+    const existingImages = fileList.value.filter(file => file.isExisting)
+    formData.append('existingImages', JSON.stringify(existingImages.map(f => f.url)))
 
-    ElMessage.success('Anunț publicat!')
-    router.push('/')
+    if (isEditMode.value) {
+      // UPDATE
+      await apiClient.put(`/listings/${listingId.value}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      ElMessage.success('Anunț actualizat!')
+    } else {
+      // CREATE
+      await apiClient.post('/listings', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      ElMessage.success('Anunț publicat!')
+    }
+
+    router.push('/listings/my-listings')
   } catch (err) {
     ElMessage.error('Eroare la server')
     console.error(err)
