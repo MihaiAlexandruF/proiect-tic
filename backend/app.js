@@ -8,26 +8,11 @@ const app = express();
 const db = require('./config/firebase');
 const path = require('path');
 
-const allowedOrigins = [
-    'http://localhost:5173',
-];
-
 app.use(cors({
-    origin: function (origin, callback) {
-        console.log('Origin primit:', origin);
-        
-        if (!origin || 
-            allowedOrigins.indexOf(origin) !== -1 || 
-            (origin && origin.endsWith('.vercel.app'))) {
-            console.log('CORS: Access permis pentru', origin);
-            callback(null, true);
-        } else {
-            console.log('CORS: Access respins pentru', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: '*',
     credentials: true
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
