@@ -10,14 +10,13 @@ const path = require('path');
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://proiect-tic-mocha.vercel.app',
-    'https://proiect-8whibvjqk-mihaialexandrufs-projects.vercel.app',
-    'https://proiect-bfi2mtga1-mihaialexandrufs-projects.vercel.app'
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        if (!origin || 
+            allowedOrigins.indexOf(origin) !== -1 || 
+            origin.endsWith('.vercel.app')) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
